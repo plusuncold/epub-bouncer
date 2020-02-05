@@ -1,2 +1,2 @@
-enchant
+pyenchant
 contractions
