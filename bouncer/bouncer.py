@@ -8,6 +8,7 @@ import re
 
 # ---------------------------------------------------------------------------------------------------
 
+# Apply the corrections to the string file_contents
 def correct_file_contents(corrections : Dict[str, str], file_contents : str):
     file_contents_corrected = file_contents
     for orig, corr in corrections.items():
@@ -21,6 +22,7 @@ def correct_file_contents(corrections : Dict[str, str], file_contents : str):
         
     return file_contents_corrected
 
+# Apply the corrections to the text_files, opening them, correcting them, and saving them
 def apply_corrections(corrections, text_files):
     for text_file in text_files:
         file_contents = ''
@@ -44,18 +46,23 @@ def main():
                         help='name of the temporary folder created')
     args = parser.parse_args()
     
-    # set path
-    path = args.epub_name + '.epub'
-    path_corrected = args.epub_name + '_corrected.epub'
+    # set path and path_corrected
+    path = args.epub_name
+    if not '.epub' in args.epub_name[-5:]:
+        path = args.epub_name + '.epub'
+    path_corrected = path[:-5] + '_corrected.epub'
     
+    # Only permit currently allowable dictionaries
     if args.dict_lang != 'en_US':
         print(f'Bouncer currently only supports the en_US dictionary')
         quit()
     
+    # Extract the files from the epub into temp_folder
     epub_handling.extract_from_epub_file(path, args.temp_folder)
     
     print('Extracted the ePub files')
-           
+    
+    # Get the location of all the files with text in
     opt_contents_path = xml_handling.get_contents_path_from_container_file(args.temp_folder)
     text_files = xml_handling.get_text_file_paths_from_contents_file(opt_contents_path, args.temp_folder)
     
@@ -68,11 +75,9 @@ def main():
     corrections = correct_spellings.corrections_for_words(unique_words, args.dict_lang)
     
     print(f'Applying corrections to ePub extracted files')
-    # Apply corrections
     apply_corrections(corrections, text_files)
     
     print(f'Applied corrections, writing ePub extracted files back to .ePub file')
-
     epub_handling.write_epub_file(path_corrected, args.temp_folder)
     
     print('Wrote corrected ePub!')
