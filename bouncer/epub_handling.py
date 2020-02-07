@@ -6,7 +6,7 @@ Created on Wed Feb  5 10:39:05 2020
 @author: plusuncold
 """
 
-from zipfile import ZipFile
+from zipfile import ZipFile, ZIP_DEFLATED, ZIP_STORED
 import glob
 import os
 
@@ -46,7 +46,9 @@ def write_epub_file(path, source_folder):
         # NOTE: standard requires mimetype file be first file in archive
         files_to_write = list_of_files_in_folder(source_folder)
 
-        for file in files_to_write:
+        for index, file in enumerate(files_to_write):
             # Remove the temp folder name before writing
             file_name_in_zip = file[len(source_folder)+1:]
-            zip_file.write(file, file_name_in_zip)
+            # Compress all members with compress_type 8, apart from mimetype
+            compress_type = ZIP_DEFLATED if index > 0 else ZIP_STORED
+            zip_file.write(file, file_name_in_zip, compress_type=compress_type)
