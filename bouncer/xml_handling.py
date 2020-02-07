@@ -76,8 +76,19 @@ def strip_non_alphanum(word):
 # Strip out common English contractions from word (e.g. they'll)
 # leaving just the first part (e.g. they)
 def strip_contractions(word):
+    if not isinstance(word, str):
+        raise TypeError
+
+    # Catch some contractions that the contractions package doesn't get
+    if word[-3:] == '\'ll':
+        return word[:-3]
+
+    # Get list of constituent words
     word_list = contractions.fix(word).split()
-    return word_list[0]
+
+    # Return only the original length of the word (bug in contractions
+    # doesn't preserve capitalization)
+    return word[:len(word_list[0])]
 
 
 # Remove any saxon genitives (e.g. David's)
