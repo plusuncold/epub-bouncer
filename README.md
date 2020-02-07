@@ -1,4 +1,4 @@
-# EPUB Bouncer
+# EPUB Bouncer ![travis_build_status](https://travis-ci.org/plusuncold/epub-bouncer.svg?branch=master)
 
 Correct misspellings from EPUB files - with a simple, intuitive interface.
 
