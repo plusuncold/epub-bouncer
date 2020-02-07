@@ -5,6 +5,8 @@ import xml_handling as xh
 import argparse
 import string
 import re
+import shutil
+import os
 
 # ---------------------------------------------------------------------------------------------------
 
@@ -40,6 +42,21 @@ def apply_corrections(corrections, text_files):
                                                                file_contents)
         with open(text_file, 'w') as file:
             file.write(file_contents_with_corrections)
+
+
+# Delete the folder at folder, or if folder does not exist, raise an exception
+def delete_folder(folder: str):
+    if not isinstance(folder, str) or not folder:
+        print('Folder to delete is invalid, so will not be deleted')
+        raise TypeError
+
+    if not os.path.exists(folder):
+        raise Exception(f'folder {folder} does not exist!')
+
+    try:
+        shutil.rmtree(folder)
+    except OSError as ex:
+        print(f'Error deleting temp folder: {ex.filename} {ex.strerror}')
 
 
 def main():
@@ -91,6 +108,8 @@ def main():
     epub_handling.write_epub_file(path_corrected, args.temp_folder)
 
     print('Wrote corrected ePub!')
+
+    delete_folder(args.temp_folder)
 
 
 if __name__ == '__main__':

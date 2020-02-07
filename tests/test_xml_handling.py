@@ -1,5 +1,10 @@
 import pytest
-from bouncer.xml_handling import strip_non_alphanum, strip_contractions
+import os
+import sys
+DIR = os.path.abspath(os.path.dirname(__file__))
+path = os.path.join(DIR, '../bouncer')
+sys.path.append(path)
+from bouncer.xml_handling import strip_non_alphanum, strip_contractions # noqa E402
 
 
 # strip_non_alphanum
