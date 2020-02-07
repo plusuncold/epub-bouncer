@@ -1,2 +1,5 @@
 language: python
 script: pytest
+
+before_install:
+- sudo apt-get -y install enchant
