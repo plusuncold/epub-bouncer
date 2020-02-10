@@ -1,5 +1,9 @@
 language: python
-script: pytest
+script: bash run_tests.sh
 
 before_install:
 - sudo apt-get -y install enchant
+
+install:
+- pip install -r requirements.txt
+- pip install -r requirements-dev.txt
