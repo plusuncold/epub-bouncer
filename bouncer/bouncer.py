@@ -1,47 +1,9 @@
-from typing import Dict
 import correct_spellings
 import epub_handling
 import xml_handling as xh
 import argparse
-import string
-import re
 import shutil
 import os
-
-# ---------------------------------------------------------------------------------------------------
-
-
-# Apply the corrections to the string file_contents
-def correct_file_contents(corrections: Dict[str, str], file_contents: str):
-    file_contents_corrected = file_contents
-    for orig, corr in corrections.items():
-        # Replace (orig, corr) with (orig, corr), (Orig, Corr) and (ORIG, CORR)
-        file_contents_corrected = file_contents.replace(orig, corr)
-        file_contents_corrected = file_contents.replace(string.capwords(orig),
-                                                        string.capwords(corr))
-        file_contents_corrected = file_contents.replace(orig.upper(),
-                                                        corr.upper())
-
-        # Catch-all for MiXeD case words
-        file_contents_corrected = re.sub(orig,
-                                         corr.upper(),
-                                         file_contents_corrected,
-                                         re.IGNORECASE)
-
-    return file_contents_corrected
-
-
-# Apply the corrections to the text_files, opening them, correcting them,
-# and saving them
-def apply_corrections(corrections, text_files):
-    for text_file in text_files:
-        file_contents = ''
-        with open(text_file, 'r') as file:
-            file_contents = file.read()
-        file_contents_with_corrections = correct_file_contents(corrections,
-                                                               file_contents)
-        with open(text_file, 'w') as file:
-            file.write(file_contents_with_corrections)
 
 
 # Delete the folder at folder, or if folder does not exist, raise an exception
@@ -91,18 +53,18 @@ def main():
     text_files = xh.get_text_file_paths_from_contents_file(contents_path,
                                                            args.temp_folder)
 
-    # Read dict of unique words (with occurance count) from text files
-    unique_words = xh.unique_words_from_text_files(text_files)
+    # Read list of paragraphs from text files
+    text_from_files = xh.get_text_elements_from_text_files(text_files)
 
     print('Read all words from ePub')
 
     # Get dict of corrections [original,correction] to be applied
     # to all text_files
-    corrections = correct_spellings.corrections_for_words(unique_words,
+    corrections = correct_spellings.corrections_for_words(text_from_files,
                                                           args.dict_lang)
 
     print(f'Applying corrections to ePub extracted files')
-    apply_corrections(corrections, text_files)
+    xh.apply_corrections(corrections, text_files)
 
     print(f'Applied corrections, writing extracted files back to .ePub file')
     epub_handling.write_epub_file(path_corrected, args.temp_folder)
