@@ -97,9 +97,8 @@ def add_corrections_to_node(corrections, node):
 # and saving them
 def apply_corrections(corrections, text_files):
     for text_file in text_files:
-        root = ET.parse(text_file).getroot()
+        tree = ET.parse(text_file)
+        root = tree.getroot()
         for body in root.findall('{http://www.w3.org/1999/xhtml}body'):
             add_corrections_to_node(corrections, body)
-        tree = ET.ElementTree(root)
-        with open(text_file, 'w') as file:
-            tree.write(file)
+        tree.write(text_file)

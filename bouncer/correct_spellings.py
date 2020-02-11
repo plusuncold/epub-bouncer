@@ -13,6 +13,7 @@ CONTEXT_LENGTH = 5
 CHUNK_SIZE = 5
 SPACES_TO_SEARCH = CONTEXT_LENGTH // 2 + 1
 ENGLISH_WORD_SPLIT_REGEX = r"[\w']+"
+PROPER_NOUN_THRESHOLD = 2
 
 
 class Unique_Word_Data:
@@ -88,8 +89,8 @@ def get_correction_for_word(word: str, data: Unique_Word_Data,
 
     print(f'Example: "{data.get_context_example()}"')
 
-    output = f'0 - No correction, e - end correct word, f - finish correcting '
-    output += 'words, q - quit'
+    output = f'0 - No correction, e - enter correct word, f - finish '
+    output += 'correcting words, q - quit'
     print(output)
     print('Suggestions: ', end='')
 
@@ -113,6 +114,8 @@ def get_correction_for_word(word: str, data: Unique_Word_Data,
         user_input = get_user_inputted_word()
         if user_input:
             return (user_input, False)
+        else:
+            return get_context_for_word(word, data, dictionary, index, total)
     elif user_input == 'q':
         print('Quitting program')
         quit()
@@ -124,6 +127,10 @@ def get_correction_for_word(word: str, data: Unique_Word_Data,
             return (None, False)
         elif key_number >= 1 and key_number <= 9:
             return (suggestions[key_number-1], False)
+        else:
+            print(f'{key_number} is not a valid number for input')
+            return get_correction_for_word(word, data, dictionary,
+                                           index, total)
     except ValueError:
         output = f'Input {user_input} is not valid. Please input \'f\', \'e\''
         output += ',\'q\' or a number between 0 and 9'
@@ -321,11 +328,12 @@ def exclude_proper_nouns(words):
 
     possible_proper_nouns = {k: v
                              for k, v in words.items()
-                             if v.are_all_occurences_capitalized()}
+                             if v.are_all_occurences_capitalized() and
+                             v.count >= PROPER_NOUN_THRESHOLD}
 
-    print(f'\n\nThere are {len(possible_proper_nouns)} possible ', end='')
+    print(f'There are {len(possible_proper_nouns)} possible ', end='')
     print('proper nouns not found in the dictionary (e.g. names). ', end='')
-    print('Accept any that are names.\n')
+    print('Accept any that are not misspellings.\n')
     set_count = 1
     total_sets = len(possible_proper_nouns) // CHUNK_SIZE + 1
 
@@ -354,8 +362,7 @@ def exclude_proper_nouns(words):
 
     misspelled_words = {k: v
                         for k, v in words.items()
-                        if k in possible_proper_nouns and
-                        k not in excluded_words}
+                        if k not in excluded_words}
 
     print(f'{len(misspelled_words)} words to correct')
 
@@ -373,7 +380,9 @@ def proper_nouns_are_capitalized_with_language(dict_lang: str):
 # Interface to get corrections from user
 def corrections_for_words(text, dict_lang):
     # Start by obtaining unique words and associated data
+    print('Extracting word data...')
     unique_words = get_unique_words_and_data(text, dict_lang)
+    print('Word data extracted!')
 
     count_unique_words = len(unique_words)
 
@@ -387,7 +396,7 @@ def corrections_for_words(text, dict_lang):
 
     count_misspelled_words = len(misspelled_words)
 
-    unique_word_info = f'Of {count_unique_words} unique words in the ePub, '
+    unique_word_info = f'\nOf {count_unique_words} unique words in the ePub, '
     unique_word_info += f'{count_misspelled_words} were not found in '
     unique_word_info += f'dictionary \'{dict_lang}\''
     print(unique_word_info)
@@ -396,7 +405,7 @@ def corrections_for_words(text, dict_lang):
                                                 key=lambda kv: kv[1],
                                                 reverse=True)}
 
-    print('Unique words not found in dictionary:')
+    print('\nUnique words not found in dictionary:')
     for v, data in misspelled_words.items():
         print(data.get_display_version_of_word(), end=' ')
     print('')
@@ -406,9 +415,21 @@ def corrections_for_words(text, dict_lang):
 
     # Exclusion of proper nouns
     if proper_nouns_are_capitalized_with_language(dict_lang):
+        print('\n\n-----------------------------------------------------')
+        print('Correct words - Stage 1 of 2 - Filter out names, etc.')
+        print('-----------------------------------------------------\n\n')
         misspelled_words = exclude_proper_nouns(misspelled_words)
+        count_misspelled_words = len(misspelled_words)
+    else:
+        print('\n\n------------------------------------')
+        print('Correct words - Skipped Stage 1 of 2')
+        print('------------------------------------\n\n')
 
-    print('\nCorrect any misspelled words')
+    print('\n\n-------------------------------------------------------------')
+    print('Correct words - Stage 2 of 2 - Search and replace wrong words')
+    print('-------------------------------------------------------------\n')
+
+    print('Correct any misspelled words')
     print('Enter:\n\ta number 1-9 to select a correction')
     print('\t\'0\' to leave the word as is')
     print('\t\'e\' to enter the correct word')

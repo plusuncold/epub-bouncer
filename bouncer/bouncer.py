@@ -56,14 +56,14 @@ def main():
     # Read list of paragraphs from text files
     text_from_files = xh.get_text_elements_from_text_files(text_files)
 
-    print('Read all words from ePub')
+    print('All text read from ePub')
 
     # Get dict of corrections [original,correction] to be applied
     # to all text_files
     corrections = correct_spellings.corrections_for_words(text_from_files,
                                                           args.dict_lang)
 
-    print(f'Applying corrections to ePub extracted files')
+    print(f'Applying corrections to ePub extracted files...')
     xh.apply_corrections(corrections, text_files)
 
     print(f'Applied corrections, writing extracted files back to .ePub file')
