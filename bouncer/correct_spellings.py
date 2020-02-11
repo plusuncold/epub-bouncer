@@ -89,8 +89,8 @@ def get_correction_for_word(word: str, data: Unique_Word_Data,
 
     print(f'Example: "{data.get_context_example()}"')
 
-    output = f'0 - No correction, e - enter correct word, f - finish '
-    output += 'correcting words, q - quit'
+    output = f'0 - No correction, e - enter correct word, c - print all'
+    output += ' examples, f - finish correcting words, q - quit'
     print(output)
     print('Suggestions: ', end='')
 
@@ -115,10 +115,15 @@ def get_correction_for_word(word: str, data: Unique_Word_Data,
         if user_input:
             return (user_input, False)
         else:
-            return get_context_for_word(word, data, dictionary, index, total)
+            return get_correction_for_word(word, data, dictionary,
+                                           index, total)
     elif user_input == 'q':
         print('Quitting program')
         quit()
+    elif user_input == 'c':
+        for context in data.contexts:
+            print(f'\t"{context}"')
+        return get_correction_for_word(word, data, dictionary, index, total)
 
     # Get selection from suggestions or no selection
     try:
@@ -433,6 +438,7 @@ def corrections_for_words(text, dict_lang):
     print('Enter:\n\ta number 1-9 to select a correction')
     print('\t\'0\' to leave the word as is')
     print('\t\'e\' to enter the correct word')
+    print('\t\'c\' to get each example of the use of the word')
     print('\t\'f\' to finish correcting words or')
     print('\t\'q\' to quit\n')
 
