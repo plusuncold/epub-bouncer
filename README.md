@@ -1,8 +1,10 @@
 # EPUB Bouncer ![travis_build_status](https://travis-ci.org/plusuncold/epub-bouncer.svg?branch=master)
 
-Correct misspellings from EPUB files - with a simple, intuitive interface.
+Correct misspellings from EPUB files - with a simple interface.
 
-Often EPUB files from OCR'ed sources contain misspellings, such as random insertions or one character being read as two characters.
+Often EPUB files from OCR'ed sources contain misspellings, such as random insertions 
+or one character being read as two characters. `bouncer` applies language rules to
+make it easy to remove these errors from EPUB files.
 
 ## Installation
 
@@ -20,6 +22,15 @@ it cannot install `pyenchant`.
 
 Once `enchant` is installed, install the required Python packages with
 `pip install -r requirements.txt`
+
+## Development
+
+Additional packages required for development are in `requirements-dev.txt`. Commits
+are checked with Travis CI [Travis CI](https://travis-ci.org/plusuncold/epub-bouncer)
+against `pytest` unit testing and `flake8` unit testing. 
+Enabling [pre-commit](https://ljvmiranda921.github.io/notebook/2018/06/21/precommits-using-black-and-flake8/)
+can help ensure that code meets these requirements before committing.
+
 
 ## Usage
 
