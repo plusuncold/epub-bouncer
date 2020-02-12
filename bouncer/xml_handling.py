@@ -30,6 +30,7 @@ def get_contents_path_from_container_file(temp_folder):
 
 # Get list of text files from OPF contents file
 def get_text_file_paths_from_contents_file(contents_file_path, temp_folder):
+    contents_path = contents_file_path[:-len('content.opt')]
     text_files = []
     root = ET.parse(contents_file_path).getroot()
 
@@ -40,7 +41,7 @@ def get_text_file_paths_from_contents_file(contents_file_path, temp_folder):
                       if item.attrib['media-type'] == 'application/xhtml+xml']
 
     # place in reference to temp_folder directory
-    text_files = [str(temp_folder + '/' + f) for f in text_files]
+    text_files = [str(contents_path + f) for f in text_files]
     return text_files
 
 
@@ -58,9 +59,13 @@ def add_words_from_node_to_text_list(node, text):
 def get_text_elements_from_text_files(text_file_paths: List[str]):
     text = []
     for text_file_path in text_file_paths:
-        root = ET.parse(text_file_path).getroot()
-        for body in root.findall('{http://www.w3.org/1999/xhtml}body'):
-            add_words_from_node_to_text_list(body, text)
+        try:
+            root = ET.parse(text_file_path).getroot()
+            for body in root.findall('{http://www.w3.org/1999/xhtml}body'):
+                add_words_from_node_to_text_list(body, text)
+        except ET.ParseError:
+            print(f'Non valid XML file at {text_file_path}, ePub has ', end='')
+            print(f'errors, skipping...')
     return text
 
 
@@ -97,8 +102,12 @@ def add_corrections_to_node(corrections, node):
 # and saving them
 def apply_corrections(corrections, text_files):
     for text_file in text_files:
-        tree = ET.parse(text_file)
-        root = tree.getroot()
-        for body in root.findall('{http://www.w3.org/1999/xhtml}body'):
-            add_corrections_to_node(corrections, body)
-        tree.write(text_file)
+        try:
+            tree = ET.parse(text_file)
+            root = tree.getroot()
+            for body in root.findall('{http://www.w3.org/1999/xhtml}body'):
+                add_corrections_to_node(corrections, body)
+            tree.write(text_file)
+        except ET.ParseError:
+            print(f'Non valid XML file at {text_file}, ePub has ', end='')
+            print(f'errors, skipping correcting this file...')
