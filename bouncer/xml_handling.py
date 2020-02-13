@@ -8,8 +8,8 @@ Created on Wed Feb  5 10:43:24 2020
 
 import xml.etree.ElementTree as ET
 from typing import List
+import string
 import re
-import contractions
 
 
 # Read META-INF/container.xml for the location of the OPF contents file
@@ -30,6 +30,7 @@ def get_contents_path_from_container_file(temp_folder):
 
 # Get list of text files from OPF contents file
 def get_text_file_paths_from_contents_file(contents_file_path, temp_folder):
+    contents_path = contents_file_path[:-len('content.opt')]
     text_files = []
     root = ET.parse(contents_file_path).getroot()
 
@@ -40,104 +41,73 @@ def get_text_file_paths_from_contents_file(contents_file_path, temp_folder):
                       if item.attrib['media-type'] == 'application/xhtml+xml']
 
     # place in reference to temp_folder directory
-    text_files = [str(temp_folder + '/' + f) for f in text_files]
+    text_files = [str(contents_path + f) for f in text_files]
     return text_files
 
 
-# Traverse the document tree and add words to the word_list
-def add_words_from_text_to_word_list(body, word_list):
-    for child in body:
+# Traverse the document tree and add words to the list of text elements
+def add_words_from_node_to_text_list(node, text):
+    for child in node:
         if child.text:
-            # split the text into words
-            text_split = re.findall(r"[\w']+", child.text)
-
-            for word in text_split:
-                # check 'word' is not just a ' char
-                if not word == '\'':
-                    word_list.append(word)
+            text.append(child.text)
         for submember in child:
             # Recursively call function for submember of child
-            add_words_from_text_to_word_list(submember, word_list)
-
-
-# Strip out non-alphanumeric characters from the beginning and ending of word
-def strip_non_alphanum(word):
-    if not word:
-        return word  # nothing to strip
-    for start, ch in enumerate(word):
-        if ch.isalnum():
-            break
-    for end, ch in enumerate(word[::-1]):
-        if ch.isalnum():
-            break
-    return word[start:len(word) - end]
-
-
-# Strip out common English contractions from word (e.g. they'll)
-# leaving just the first part (e.g. they)
-def strip_contractions(word):
-    if not isinstance(word, str):
-        raise TypeError
-
-    # Catch some contractions that the contractions package doesn't get
-    if word[-3:] == '\'ll':
-        return word[:-3]
-
-    # Get list of constituent words
-    word_list = contractions.fix(word).split()
-
-    # Return only the original length of the word (bug in contractions
-    # doesn't preserve capitalization)
-    return word[:len(word_list[0])]
-
-
-# Remove any saxon genitives (e.g. David's)
-def strip_saxon_genitive(word):
-    if word[-1] == 's':
-        if word[-2] == '\'':
-            word = word[:-2]
-    return word
-
-
-# Strip out unnecessary characters
-def clean_word(word):
-    word = strip_non_alphanum(word)
-    word = strip_contractions(word)
-    word = strip_saxon_genitive(word)
-    return word
+            add_words_from_node_to_text_list(submember, text)
 
 
 # Returns a dict with unique words and occurances
-def unique_words_from_text_files(text_file_paths: List[str]):
-    all_unique_words = {}
+def get_text_elements_from_text_files(text_file_paths: List[str]):
+    text = []
     for text_file_path in text_file_paths:
-        root = ET.parse(text_file_path).getroot()
-        words = []
-        for body in root.findall('{http://www.w3.org/1999/xhtml}body'):
-            add_words_from_text_to_word_list(body, words)
-        add_list_to_unique_words(all_unique_words, words)
-    return all_unique_words
+        try:
+            root = ET.parse(text_file_path).getroot()
+            for body in root.findall('{http://www.w3.org/1999/xhtml}body'):
+                add_words_from_node_to_text_list(body, text)
+        except ET.ParseError:
+            print(f'Non valid XML file at {text_file_path}, ePub has ', end='')
+            print(f'errors, skipping...')
+    return text
 
 
-# Merge word_list into unique_words, generating associated count data
-def add_list_to_unique_words(unique_words, word_list):
-    clean_word_list = [clean_word(word) for word in word_list]
-    words_list_set = set(clean_word_list)
-    for word in words_list_set:
-        if word:
+# Apply the corrections to the string text
+def apply_corrections_to_string(corrections, text: str):
+    text_corrected = text
+    for orig, corr in corrections.items():
+        # Replace (orig, corr) with (orig, corr), (Orig, Corr) and (ORIG, CORR)
+        text_corrected = text.replace(orig, corr)
+        text_corrected = text.replace(string.capwords(orig),
+                                      string.capwords(corr))
+        text_corrected = text.replace(orig.upper(),
+                                      corr.upper())
 
-            # set or increment value for word key in unique words
-            # key: word
-            # value: (count, count_capitalized)
-            is_capitalized = True if word[0].isupper() else False
-            word_lower = word.lower()
-            if unique_words.get(word_lower):
-                count, count_capitalized = unique_words.get(word_lower)
-                count += 1
-                if is_capitalized:
-                    count_capitalized += 1
-                unique_words[word_lower] = (count, count_capitalized)
-            else:
-                count_capitalized = 1 if is_capitalized else 0
-                unique_words[word_lower] = (1, count_capitalized)
-    return unique_words
+        # Catch-all for MiXeD case words
+        text_corrected = re.sub(orig,
+                                corr.upper(),
+                                text_corrected,
+                                re.IGNORECASE)
+
+    return text_corrected
+
+
+# Traverse the document tree and apply corrections to each text element
+def add_corrections_to_node(corrections, node):
+    for child in node:
+        if child.text:
+            child.text = apply_corrections_to_string(corrections, child.text)
+        for submember in child:
+            add_corrections_to_node(corrections, submember)
+
+
+# Apply the corrections to the text_files, opening them, correcting them,
+# and saving them
+def apply_corrections(corrections, text_files):
+    for text_file in text_files:
+        try:
+            tree = ET.parse(text_file)
+            root = tree.getroot()
+            for body in root.findall('{http://www.w3.org/1999/xhtml}body'):
+                add_corrections_to_node(corrections, body)
+            tree.write(text_file)
+        except ET.ParseError:
+            print(f'Non valid XML file at {text_file}, ePub has ', end='')
+            print(f'errors, skipping correcting this file...')

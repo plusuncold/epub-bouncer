@@ -1,4 +1,5 @@
 temp/*
+temp_test/*
 __pycache__/
 *#
 *~

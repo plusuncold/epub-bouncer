@@ -9,10 +9,14 @@ Created on Wed Feb  5 10:39:05 2020
 from zipfile import ZipFile, ZIP_DEFLATED, ZIP_STORED
 import glob
 import os
+from file_utils import delete_folder
 
 
 # Extract all the files from the EPUB archive into the dest_folder
 def extract_from_epub_file(path, dest_folder):
+    if os.path.exists(dest_folder):
+        delete_folder(dest_folder)
+
     # Open the zip file
     try:
         with ZipFile(path) as zip_file:
