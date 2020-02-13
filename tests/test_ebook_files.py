@@ -3,7 +3,8 @@ import sys
 DIR = os.path.abspath(os.path.dirname(__file__))
 path = os.path.join(DIR, '../bouncer')
 sys.path.append(path)
-from bouncer.bouncer import correct_ebook, delete_folder # noqa E402
+from bouncer.bouncer import correct_ebook # noqa E402
+from bouncer.file_utils import delete_folder # noqa E402
 from bouncer.epub_handling import extract_from_epub_file, write_epub_file # noqa E402
 import bouncer.xml_handling as xh # noqa E402
 
